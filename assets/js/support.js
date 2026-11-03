@@ -122,11 +122,14 @@ document.addEventListener('DOMContentLoaded', () => {
         waButton.href = `https://wa.me/918527868276?text=${waBody}`;
       }
 
-      // Transition views
-      ticketForm.classList.add('hidden');
-      if (ticketResultBox) {
-        ticketResultBox.classList.remove('hidden');
-        ticketResultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Show loading state on ticket submit button
+      const submitBtn = ticketForm.querySelector('button[type="submit"]') || document.getElementById('ticket-submit-btn');
+      const submitText = submitBtn ? submitBtn.querySelector('.submit-text') : null;
+      const originalText = submitText ? submitText.textContent : 'Generate & Submit Support Ticket';
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        if (submitText) submitText.textContent = 'Dispatching Support Ticket...';
       }
 
       // Dispatch to Formspree Endpoint (Direct Live Delivery to ankitrajbhar85278@gmail.com)
@@ -137,27 +140,43 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          form_type: 'Support Ticket Dispatch',
-          ticket_id: ticketNumber,
-          client_name: name,
-          client_email: email,
-          client_phone: phone,
+          _subject: `[Support Ticket #${ticketNumber}] [${priority}] ${category} - ${subject} (${name})`,
+          _replyto: email,
+          name: name,
+          email: email,
+          phone: phone,
           category: category,
           priority: priority,
           subject: subject,
-          description: message,
-          timestamp: currentTime,
+          message: message,
+          ticket_id: ticketNumber,
+          source_page: 'Operations Support Helpdesk',
+          submitted_at: currentTime,
         }),
       }).then((res) => {
         if (res.ok) {
           console.log('[Formspree] Ticket delivered successfully to ankitrajbhar85278@gmail.com');
+          showToast(`Support Ticket #${ticketNumber} delivered directly to Ankit Rajbhar!`, 'success');
+        } else {
+          showToast(`Ticket #${ticketNumber} created! Sync directly via WhatsApp.`, 'info');
         }
       }).catch((err) => {
-        console.warn('[Formspree] Dispatch warning:', err);
-      });
+        console.warn('[Formspree] Dispatch notice:', err);
+        showToast(`Ticket #${ticketNumber} created! Please confirm on WhatsApp.`, 'info');
+      }).finally(() => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          if (submitText) submitText.textContent = originalText;
+        }
 
-      showToast(`Support Ticket ${ticketNumber} dispatched directly via Formspree!`, 'success');
-      if (window.lucide) window.lucide.createIcons();
+        // Transition views to ticket confirmation card
+        ticketForm.classList.add('hidden');
+        if (ticketResultBox) {
+          ticketResultBox.classList.remove('hidden');
+          ticketResultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        if (window.lucide) window.lucide.createIcons();
+      });
     });
   }
 

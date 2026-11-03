@@ -245,10 +245,15 @@ document.addEventListener('DOMContentLoaded', () => {
         whatsappActionBtn.href = `https://wa.me/918527868276?text=${formattedText}`;
       }
 
-      // Transition to success state
-      registrationForm.classList.add('hidden');
-      if (registrationSuccessView) {
-        registrationSuccessView.classList.remove('hidden');
+      // Show loading indicator on submit button
+      const submitBtn = registrationForm.querySelector('button[type="submit"]') || document.getElementById('reg-submit-btn');
+      const submitText = submitBtn ? submitBtn.querySelector('.submit-text') : null;
+      const submitIcon = submitBtn ? submitBtn.querySelector('.submit-icon') : null;
+      const originalText = submitText ? submitText.textContent : 'Submit Registration Application';
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        if (submitText) submitText.textContent = 'Submitting to Ankit Rajbhar...';
       }
 
       // Dispatch to Formspree Endpoint (Direct Live Delivery to ankitrajbhar85278@gmail.com)
@@ -259,26 +264,41 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          form_type: 'New Registration / Enrollment',
-          reference_code: refId,
-          full_name: name,
+          _subject: `[New ISH Application] ${name} - ${interest} (${role}) [${refId}]`,
+          _replyto: email,
+          name: name,
           email: email,
-          phone_number: phone,
+          phone: phone,
           role: role,
-          chosen_track: interest,
-          message_details: message,
+          interest_track: interest,
+          message: message,
+          reference_code: refId,
+          source_page: window.location.pathname.includes('support') ? 'Support Page Registration Modal' : 'Homepage Registration Modal',
           submitted_at: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
         }),
       }).then((res) => {
         if (res.ok) {
           console.log('[Formspree] Registration delivered successfully to ankitrajbhar85278@gmail.com');
+          showToast('Application delivered directly to Founder Ankit Rajbhar!', 'success');
+        } else {
+          showToast('Application saved! You can also confirm directly on WhatsApp.', 'info');
         }
       }).catch((err) => {
-        console.warn('[Formspree] Dispatch warning:', err);
-      });
+        console.warn('[Formspree] Dispatch notice:', err);
+        showToast('Application logged! Please verify on WhatsApp.', 'info');
+      }).finally(() => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          if (submitText) submitText.textContent = originalText;
+        }
 
-      showToast('Application sent directly via Formspree! You can also confirm on WhatsApp.', 'success');
-      if (window.lucide) window.lucide.createIcons();
+        // Transition to success state
+        registrationForm.classList.add('hidden');
+        if (registrationSuccessView) {
+          registrationSuccessView.classList.remove('hidden');
+        }
+        if (window.lucide) window.lucide.createIcons();
+      });
     });
   }
 
